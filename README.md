@@ -1,5 +1,2 @@
-# Welcome to GitHub Desktop!
-
-This is your README. READMEs are where you can communicate what your project is and how to use it.
-
-Write your name on line 6, save it, and then head back to GitHub Desktop.
+#1.0.0
+作为PCL2 10月20日MC惨案的一个下载补丁，作为给小白的一键程序

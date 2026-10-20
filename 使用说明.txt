@@ -1,0 +1,65 @@
+PCL 下载修复器 v1.0
+====================
+
+【这是什么东西】
+PCL 2.99 的「下载 → 原版游戏」页面被作者移除了版本列表加载逻辑，
+点下载只会弹出「为遵守相关法律法规，PCL 暂时不再提供 MC 下载功能」。
+本程序是一个外挂启动器：启动 PCL 的瞬间，在它自己的内存里把这段逻辑补回去，
+让下载页恢复成 2.14 及更早版本的样子。
+
+它不会修改磁盘上的 PCL 文件，也不会往 PCL 目录里写东西（除了可选的配置文件），
+所以：
+  * PCL 更新后依然有效（每次启动都会按当前版本重新打补丁）
+  * 想恢复原样，直接用原版 PCL 启动即可
+
+【怎么用】
+1. 双击 PCL下载修复.exe
+2. 选择 PCL 主程序（Plain Craft Launcher 2.exe）：
+   - 放在 PCL 同一个文件夹里会自动识别
+   - 放在别处就点「浏览…」选一次，勾选「记住此路径」，以后不用再选
+3. 点「启动 PCL」
+4. 在 PCL 里点「下载 → 原版游戏」，选择版本，点「开始安装」
+
+之后就和正常 PCL 完全一样：下载源、版本隔离、Forge/Fabric 列表、Java 自动下载都走 PCL 自己的逻辑。
+
+【能用哪些功能】
+* 原版游戏下载安装（正式版 / 预览版 / 远古版 / 愚人节版）
+* Fabric、Quilt、Forge、NeoForge、LiteLoader、OptiFine 的下载与安装
+* 缺少 Java 时，PCL 自己会提示并下载对应版本的 Java
+* 版本组件修改、整合包导出等原有功能
+
+【暂时不能用】
+* 「整合包」下载安装：PCL 2.99 把整个 ModModpack.ModpackInstall 方法删空了，
+  不是加了开关，外部无法恢复，只能等以后单独做。
+* 其它被删掉的功能同理。
+
+【注意事项】
+1. 启动前请确保 PCL 已经完全退出（包括右下角托盘图标），否则会提示「PCL 已经在运行」。
+2. 本程序需要在 PCL 启动之前介入，所以不能先开 PCL 再用它。
+3. 部分杀毒软件可能对「往别的进程写内存」比较敏感。本程序只写 PCL 自己的一个方法体，
+   不联网、不注入 DLL、不驻留。如被拦截，把本程序加入信任即可。
+4. 需要 .NET Framework 4.8（Windows 10/11 自带，无需安装）。
+
+【出问题了怎么办】
+弹窗提示一般会写清楚原因，常见几种：
+* 「没有找到 Plain Craft Launcher 2.exe」→ 用「浏览…」手动选一次
+* 「这个 PCL 不是 2.99，或结构已变化」→ 说明 PCL 版本对不上，把 PCL 版本号告诉我
+* 「无法修改 PCL 内存保护属性 / 写入补丁失败」→ 被杀软拦了
+* 「无法获取 PCL 模块基址」→ 系统权限异常，试试以管理员身份运行
+
+如果下载页能打开但没有版本列表，把 PCL 目录下的 Log1.txt 发我。
+
+【原理（给想看的人）】
+PCL 的 PageDownloadInstall.LoaderInit 原本是：
+
+    PageLoaderInit(LoadMinecraft, PanLoad, PanAllBack, Nothing,
+                   DlClientListLoader, AddressOf LoadMinecraft_OnFinish)
+
+2.99 把它换成了：
+
+    PageLoaderInit(..., New LoaderTask(Of String, DlClientListResult)(
+                       "关闭下载", Sub() Throw New Exception("为遵守相关法律法规…"), ...), ...)
+
+页面其余部分（列表渲染 ShowMinecraftVersionList、安装流程 McInstallStart、
+下载引擎 ModDownloadLib/ModNet）全都完好。本程序在 PCL 进程挂起时，
+把该方法的 IL 换回 `ldsfld ModDownload::DlClientListLoader`，仅此一处。
